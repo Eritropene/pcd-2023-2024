@@ -14,7 +14,7 @@ public class SequentialSort {
 		log("Array generated.");
 		log("Sorting (" + VECTOR_SIZE + " elements)...");
 	
-		long t0 = System.nanoTime();		
+		long t0 = System.nanoTime();
 		Arrays.sort(v, 0, v.length);
 		long t1 = System.nanoTime();
 		log("Done. Time elapsed: " + ((t1 - t0) / 1000000) + " ms");
@@ -41,4 +41,6 @@ public class SequentialSort {
 	private static void log(String msg) {
 		System.out.println(msg);
 	}
+
+	
 }
