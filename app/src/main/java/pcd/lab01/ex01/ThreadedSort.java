@@ -100,44 +100,66 @@ public class ThreadedSort {
         
     }
 
-	static void merge(long arr[], int start, int mid,
-                      int end)
-    {
-        System.out.println("merging ... " + start + " to " + end);
-        mid -= 1;
-        int start2 = mid + 1;
+	// static void merge(long arr[], int start, int mid,
+    //                   int end)
+    // {
+    //     System.out.println("merging ... " + start + " to " + end);
+    //     mid -= 1;
+    //     int start2 = mid + 1;
  
-        // If the direct merge is already sorted
-        if (arr[mid] <= arr[start2]) {
+    //     // If the direct merge is already sorted
+    //     if (arr[mid] <= arr[start2]) {
+    //         return;
+    //     }
+ 
+    //     // Two pointers to maintain start
+    //     // of both arrays to merge
+    //     while (start <= mid && start2 <= end) {
+ 
+    //         // If element 1 is in right place
+    //         if (arr[start] <= arr[start2]) {
+    //             start++;
+    //         }
+    //         else {
+    //             long value = arr[start2];
+    //             int index = start2;
+ 
+    //             // Shift all the elements between element 1
+    //             // element 2, right by 1.
+    //             while (index != start) {
+    //                 arr[index] = arr[index - 1];
+    //                 index--;
+    //             }
+    //             arr[start] = value;
+ 
+    //             // Update all the pointers
+    //             start++;
+    //             mid++;
+    //             start2++;
+    //         }
+    //     }
+    //     System.out.println("Done.");
+    // }
+
+    static void merge(long[] arr, int start1, int start2, int end2) {
+        if (arr[start2 - 1] <= arr[start2]) {
             return;
         }
- 
-        // Two pointers to maintain start
-        // of both arrays to merge
-        while (start <= mid && start2 <= end) {
- 
-            // If element 1 is in right place
-            if (arr[start] <= arr[start2]) {
-                start++;
-            }
-            else {
-                long value = arr[start2];
-                int index = start2;
- 
-                // Shift all the elements between element 1
-                // element 2, right by 1.
-                while (index != start) {
-                    arr[index] = arr[index - 1];
-                    index--;
+        int i1 = start1;
+
+        for (; i1 < start2; i1++) {
+            if (arr[i1] > arr[start2]) {
+                // swap
+                long val = arr[i1];
+                arr[i1] = arr[start2];
+                // shift
+                int i2 = start2;
+                while (arr[i2+1] < val) {
+                    arr[i2] = arr[i2+1];
+                    i2++;
                 }
-                arr[start] = value;
- 
-                // Update all the pointers
-                start++;
-                mid++;
-                start2++;
+                arr[i2] = val;
             }
         }
-        System.out.println("Done.");
     }
 }
