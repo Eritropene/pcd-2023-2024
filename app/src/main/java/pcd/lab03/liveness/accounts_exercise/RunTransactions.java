@@ -6,7 +6,7 @@ public class RunTransactions {
 
 	private static final int NUM_TRANSFER_AGENTS = 20;
 	private static final int NUM_ACCOUNTS = 5;
-	private static final int NUM_ITERATIONS = 10000000;
+	private static final int NUM_ITERATIONS = 10_000_000;
 
 	
 	public static void main(String[] args) {		
