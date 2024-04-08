@@ -2,7 +2,6 @@ package pcd.ass01.simengineconc;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -11,14 +10,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public abstract class AbstractConcurrentSimulation {
 
-	private static int N_THREADS;
 	/* environment of the simulation */
 	private AbstractEnvironment env;
-
-	private Random gen;
 	
 	/* list of the agents */
-	private final ParallelList<AbstractAgent> agents;
+	private final List<AbstractAgent> agents;
 	
 	/* simulation listeners */
 	private final List<SimulationListener> listeners;
@@ -45,22 +41,16 @@ public abstract class AbstractConcurrentSimulation {
 	private final AtomicBoolean flag = new AtomicBoolean();
 
 	public AbstractConcurrentSimulation(int threads) {
-		N_THREADS = threads;
 		agents = new ParallelList<>(threads);
 		listeners = new ArrayList<>();
 		onStartListeners = new ArrayList<>();
 		onStopListeners = new ArrayList<>();
 		toBeInSyncWithWallTime = false;
-		gen = new Random();
 	}
 	public AbstractConcurrentSimulation() {
 		this(Runtime.getRuntime().availableProcessors());
 	}
-
-	public static int numberOfThreads() {
-		return N_THREADS;
-	}
-
+	
 	/**
 	 * 
 	 * Method used to configure the simulation, specifying env and agents
@@ -81,8 +71,8 @@ public abstract class AbstractConcurrentSimulation {
 		/* initialize the env and the agents inside */
 		int t = t0;
 
-		env.init(new Random(gen.nextInt()));
-		agents.forEach(a -> a.init(env, new Random(gen.nextInt())));
+		env.init();
+		agents.forEach(a -> a.init(env));
 
 		this.notifyReset(t, agents, env);
 		this.onStartListeners.forEach(Runnable::run);
@@ -98,8 +88,7 @@ public abstract class AbstractConcurrentSimulation {
 			/* make a step */
 			
 			env.step(dt);
-			agents.parallelForEach(a -> a.step(dt));
-			env.executeAllActions();
+			agents.forEach(a -> a.step(dt));
 			t += dt;
 			
 			notifyNewStep(t, agents, env);
@@ -130,17 +119,6 @@ public abstract class AbstractConcurrentSimulation {
 		return this.flag.get();
 	}
 
-	/**
-	 * Set the seed of the simulation
-	 * @param seed
-	 */
-	public void setSeed(long seed) {
-		this.gen.setSeed(seed);
-	}
-	protected Random random() {
-		return this.gen;
-	}
-
 	public long getSimulationDuration() {
 		return endWallTime - startWallTime;
 	}
@@ -160,10 +138,6 @@ public abstract class AbstractConcurrentSimulation {
 		this.toBeInSyncWithWallTime = true;
 		this.nStepsPerSec = nCyclesPerSec;
 	}
-	public void syncWithTime(int nCyclesPerSec, boolean active) {
-		this.toBeInSyncWithWallTime = active;
-		this.nStepsPerSec = nCyclesPerSec;
-	}
 		
 	protected void setupEnvironment(AbstractEnvironment env) {
 		this.env = env;
@@ -172,19 +146,11 @@ public abstract class AbstractConcurrentSimulation {
 	protected void addAgent(AbstractAgent agent) {
 		agents.add(agent);
 	}
-
-	public void resetAgents() {
-		this.agents.clear();
-	}
 	
 	/* methods for listeners */
 	
 	public void addSimulationListener(SimulationListener l) {
 		this.listeners.add(l);
-	}
-
-	public void resetSimulationListeners() {
-		this.listeners.clear();
 	}
 	public void onStart(Runnable action) {
 		this.onStartListeners.add(action);

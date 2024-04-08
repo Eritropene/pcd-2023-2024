@@ -1,5 +1,7 @@
 package pcd.ass01.mvcsim;
 
+import pcd.ass01.simengineconc.AbstractConcurrentSimulation;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -11,7 +13,7 @@ public class RoadSimController {
     public void addSimulation(String name, AbstractRoadSimulation simulation) {
         simulations.put(name, simulation);
     }
-    public void startSimulation(int steps, int cars, String environment, boolean display, int seed) {
+    public void startSimulation(int steps, int cars, String environment, boolean display) {
         new Thread(() -> {
             selectedSimulation = Optional.of(simulations.get(environment));
             var simulation = selectedSimulation.get();
@@ -19,9 +21,6 @@ public class RoadSimController {
             // set cars
             simulation.setCars(cars);
             // initialize simulation
-            simulation.resetSimulationListeners();
-            simulation.resetAgents();
-            simulation.setSeed(seed);
             simulation.setup();
 
             // add statistics
@@ -29,11 +28,11 @@ public class RoadSimController {
             simulation.addSimulationListener(stat);
             // add visual display
             RoadSimView view = null;
-            simulation.syncWithTime(25, display);
             if (display) {
                 view = new RoadSimView();
                 view.display();
                 simulation.addSimulationListener(view);
+                simulation.syncWithTime(25);
             }
 
             // start simulation

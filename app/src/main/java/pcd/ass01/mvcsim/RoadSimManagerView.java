@@ -11,8 +11,6 @@ public class RoadSimManagerView extends JFrame {
     private JTextField stepsField;
     private JLabel carsLabel;
     private JTextField carsField;
-    private JLabel seedLabel;
-    private JTextField seedField;
     private JLabel environmentLabel;
     private JComboBox<String> environmentComboBox;
     private JCheckBox displayCheckBox;
@@ -20,7 +18,7 @@ public class RoadSimManagerView extends JFrame {
 
     public RoadSimManagerView(RoadSimController controller) {
         setTitle("Simulation");
-        setSize(400, 200);
+        setSize(300, 200);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setResizable(false);
@@ -34,23 +32,19 @@ public class RoadSimManagerView extends JFrame {
         String[] environments = controller.getEnvironmentNames();
         environmentComboBox = new JComboBox<>(environments);
         displayCheckBox = new JCheckBox("Display");
-        seedLabel = new JLabel("Seed:");
-        seedField = new JTextField(10);
         startButton = new JButton("Start");
         this.controller = controller;
 
         Container contentPane = getContentPane();
         contentPane.setLayout(new BorderLayout());
 
-        JPanel inputPanel = new JPanel(new GridLayout(5, 2));
+        JPanel inputPanel = new JPanel(new GridLayout(4, 2));
         inputPanel.add(stepsLabel);
         inputPanel.add(stepsField);
         inputPanel.add(carsLabel);
         inputPanel.add(carsField);
         inputPanel.add(environmentLabel);
         inputPanel.add(environmentComboBox);
-        inputPanel.add(seedLabel);
-        inputPanel.add(seedField);
         inputPanel.add(displayCheckBox);
         contentPane.add(inputPanel, BorderLayout.NORTH);
 
@@ -59,8 +53,10 @@ public class RoadSimManagerView extends JFrame {
         // Call to controller
         startButton.addActionListener(e -> {
             if (controller.simulationIsRunning()) {
+                System.out.println("stopping");
                 stopSimulation();
             } else {
+                System.out.println("starting");
                 startSimulation();
             }
         });
@@ -79,7 +75,7 @@ public class RoadSimManagerView extends JFrame {
         boolean display = displayCheckBox.isSelected();
 
         if (steps.isPresent() && cars.isPresent()) {
-            controller.startSimulation(steps.get(), cars.get(), environment, display, getSeed().orElse(0));
+            controller.startSimulation(steps.get(), cars.get(), environment, display);
         } else {
             JOptionPane.showMessageDialog(RoadSimManagerView.this, "Please enter number of steps/cars.");
         }
@@ -95,13 +91,6 @@ public class RoadSimManagerView extends JFrame {
     private Optional<Integer> getCars() {
         try {
             return Optional.of(Integer.parseInt(carsField.getText()));
-        } catch (Exception e) {
-            return Optional.empty();
-        }
-    }
-    private Optional<Integer> getSeed() {
-        try {
-            return Optional.of(Integer.parseInt(seedField.getText()));
         } catch (Exception e) {
             return Optional.empty();
         }
