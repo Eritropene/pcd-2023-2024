@@ -2,6 +2,7 @@ package pcd.ass01.simengineconc;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -10,14 +11,19 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public abstract class AbstractConcurrentSimulation {
 
+	private static int N_THREADS;
 	/* environment of the simulation */
 	private AbstractEnvironment env;
+
+	private Random gen;
 	
 	/* list of the agents */
-	private final List<AbstractAgent> agents;
+	private final ParallelList<AbstractAgent> agents;
 	
 	/* simulation listeners */
 	private final List<SimulationListener> listeners;
+	private final List<Runnable> onStartListeners;
+	private final List<Runnable> onStopListeners;
 
 	/* logical time step */
 	private int dt;
@@ -36,20 +42,31 @@ public abstract class AbstractConcurrentSimulation {
 	private long averageTimePerStep;
 
 	/* Flag for stopping the simulation */
-	private AtomicBoolean flag = new AtomicBoolean();
+	private final AtomicBoolean flag = new AtomicBoolean();
 
-	protected AbstractConcurrentSimulation() {
-		agents = new ParallelList<>();
+	public AbstractConcurrentSimulation(int threads) {
+		N_THREADS = threads;
+		agents = new ParallelList<>(threads);
 		listeners = new ArrayList<>();
+		onStartListeners = new ArrayList<>();
+		onStopListeners = new ArrayList<>();
 		toBeInSyncWithWallTime = false;
+		gen = new Random();
 	}
-	
+	public AbstractConcurrentSimulation() {
+		this(Runtime.getRuntime().availableProcessors());
+	}
+
+	public static int numberOfThreads() {
+		return N_THREADS;
+	}
+
 	/**
 	 * 
 	 * Method used to configure the simulation, specifying env and agents
 	 * 
 	 */
-	protected abstract void setup();
+	public abstract void setup();
 	
 	/**
 	 * Method running the simulation for a number of steps,
@@ -64,24 +81,25 @@ public abstract class AbstractConcurrentSimulation {
 		/* initialize the env and the agents inside */
 		int t = t0;
 
-		env.init();
-		agents.forEach(a -> a.init(env));
+		env.init(new Random(gen.nextInt()));
+		agents.forEach(a -> a.init(env, new Random(gen.nextInt())));
 
 		this.notifyReset(t, agents, env);
-
-		setFlag(false);
+		this.onStartListeners.forEach(Runnable::run);
 		
 		long timePerStep = 0;
 		int nSteps = 0;
-		
-		while (nSteps < numSteps && !this.flag.get()) {
+
+		setFlag(true);
+		while (nSteps < numSteps && getFlag()) {
 
 			currentWallTime = System.currentTimeMillis();
 		
 			/* make a step */
 			
 			env.step(dt);
-			agents.forEach(a -> a.step(dt));
+			agents.parallelForEach(a -> a.step(dt));
+			env.executeAllActions();
 			t += dt;
 			
 			notifyNewStep(t, agents, env);
@@ -92,7 +110,9 @@ public abstract class AbstractConcurrentSimulation {
 			if (toBeInSyncWithWallTime) {
 				syncWithWallTime();
 			}
-		}	
+		}
+		setFlag(false);
+		this.onStopListeners.forEach(Runnable::run);
 		
 		endWallTime = System.currentTimeMillis();
 		this.averageTimePerStep = timePerStep / numSteps;
@@ -105,6 +125,20 @@ public abstract class AbstractConcurrentSimulation {
 	 */
 	public void setFlag(boolean value) {
 		this.flag.set(value);
+	}
+	public boolean getFlag() {
+		return this.flag.get();
+	}
+
+	/**
+	 * Set the seed of the simulation
+	 * @param seed
+	 */
+	public void setSeed(long seed) {
+		this.gen.setSeed(seed);
+	}
+	protected Random random() {
+		return this.gen;
 	}
 
 	public long getSimulationDuration() {
@@ -122,8 +156,12 @@ public abstract class AbstractConcurrentSimulation {
 		this.t0 = t0;
 	}
 	
-	protected void syncWithTime(int nCyclesPerSec) {
+	public void syncWithTime(int nCyclesPerSec) {
 		this.toBeInSyncWithWallTime = true;
+		this.nStepsPerSec = nCyclesPerSec;
+	}
+	public void syncWithTime(int nCyclesPerSec, boolean active) {
+		this.toBeInSyncWithWallTime = active;
 		this.nStepsPerSec = nCyclesPerSec;
 	}
 		
@@ -134,11 +172,31 @@ public abstract class AbstractConcurrentSimulation {
 	protected void addAgent(AbstractAgent agent) {
 		agents.add(agent);
 	}
+
+	public void resetAgents() {
+		this.agents.clear();
+	}
 	
 	/* methods for listeners */
 	
 	public void addSimulationListener(SimulationListener l) {
 		this.listeners.add(l);
+	}
+
+	public void resetSimulationListeners() {
+		this.listeners.clear();
+	}
+	public void onStart(Runnable action) {
+		this.onStartListeners.add(action);
+	}
+	public void onStop(Runnable action) {
+		this.onStopListeners.add(action);
+	}
+	public void removeOnStart(Runnable action) {
+		this.onStartListeners.remove(action);
+	}
+	public void removeOnStop(Runnable action) {
+		this.onStopListeners.remove(action);
 	}
 	
 	private void notifyReset(int t0, List<AbstractAgent> agents, AbstractEnvironment env) {

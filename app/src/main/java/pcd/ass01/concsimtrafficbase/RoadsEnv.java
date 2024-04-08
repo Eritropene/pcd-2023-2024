@@ -4,10 +4,7 @@ import pcd.ass01.simengineconc.AbstractEnvironment;
 import pcd.ass01.simengineconc.Action;
 import pcd.ass01.simengineconc.Percept;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 public class RoadsEnv extends AbstractEnvironment {
 		
@@ -33,7 +30,8 @@ public class RoadsEnv extends AbstractEnvironment {
 	}
 	
 	@Override
-	public void init() {
+	public void init(Random gen) {
+		super.init(gen);
 		for (var tl: trafficLights) {
 			tl.init();
 		}
@@ -104,7 +102,7 @@ public class RoadsEnv extends AbstractEnvironment {
 			CarAgentInfo info = registeredCars.get(agentId);
 			Road road = info.getRoad();
 			Optional<CarAgentInfo> nearestCar = getNearestCarInFront(road, info.getPos(), CAR_DETECTION_RANGE);
-			
+
 			if (!nearestCar.isEmpty()) {
 				double dist = nearestCar.get().getPos() - info.getPos();
 				if (dist > mv.distance() + MIN_DIST_ALLOWED) {

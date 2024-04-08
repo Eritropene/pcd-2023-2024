@@ -1,5 +1,8 @@
 package pcd.ass01.simengineconc;
 
+import java.util.AbstractMap;
+import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -12,9 +15,12 @@ public abstract class AbstractEnvironment {
 
 	private final String id;
 	private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
+	private final ParallelList<Map.Entry<String, Action>> actions;
+	private Random gen;
 	
 	protected AbstractEnvironment(String id) {
-		this.id = id;		
+		this.id = id;
+		this.actions = new ParallelList<>(AbstractConcurrentSimulation.numberOfThreads());
 	}
 	
 	public String getId() {
@@ -25,7 +31,9 @@ public abstract class AbstractEnvironment {
 	 * 
 	 * Called at the beginning of the simulation
 	 */
-	public abstract void init();
+	public void init(Random gen) {
+		this.gen = gen;
+	};
 	
 	/**
 	 * 
@@ -57,10 +65,28 @@ public abstract class AbstractEnvironment {
 	 * @param agentId - identifier of the agent doing the action
 	 * @param act - the action
 	 */
-	public void doAction(String agentId, Action act) {
-		rwLock.readLock().lock();
-		doActionTemplate(agentId, act);
-		rwLock.readLock().unlock();
+	public void registerAction(String agentId, Action act) {
+		rwLock.writeLock().lock();
+		this.actions.add(Map.entry(agentId, act));
+		rwLock.writeLock().unlock();
+	}
+	/**
+	 *
+	 * Called by the simulation to execute all the actions registered
+	 */
+	public void executeAllActions() {
+		this.actions.forEach(e -> doActionTemplate(e.getKey(), e.getValue()));
+		this.actions.clear();
 	}
 	protected abstract void doActionTemplate(String agentId, Action act);
+
+	protected int randInt() {
+		return this.gen.nextInt();
+	}
+	protected double randDouble() {
+		return this.gen.nextDouble();
+	}
+	protected boolean randBool() {
+		return this.gen.nextBoolean();
+	}
 }

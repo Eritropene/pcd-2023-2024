@@ -57,7 +57,7 @@ public abstract class CarAgent extends AbstractAgent {
 		/* act */
 		
 		if (selectedAction.isPresent()) {
-			env.doAction(getId(), selectedAction.get());
+			env.registerAction(getId(), selectedAction.get());
 		}
 	}
 	

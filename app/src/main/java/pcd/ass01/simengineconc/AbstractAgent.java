@@ -1,5 +1,7 @@
 package pcd.ass01.simengineconc;
 
+import java.util.Random;
+
 /**
  * 
  * Base  class for defining types of agents taking part to the simulation
@@ -9,6 +11,7 @@ public abstract class AbstractAgent {
 	
 	private String myId;
 	private AbstractEnvironment env;
+	private Random gen;
 	
 	/**
 	 * Each agent has an identifier
@@ -24,8 +27,9 @@ public abstract class AbstractAgent {
 	 * 
 	 * @param env
 	 */
-	public void init(AbstractEnvironment env) {
+	public void init(AbstractEnvironment env, Random gen) {
 		this.env = env;
+		this.gen = gen;
 	}
 	
 	/**
@@ -34,7 +38,6 @@ public abstract class AbstractAgent {
 	 * @param dt - logical time step
 	 */
 	abstract public void step(int dt);
-	
 
 	public String getId() {
 		return myId;
@@ -42,5 +45,15 @@ public abstract class AbstractAgent {
 	
 	protected AbstractEnvironment getEnv() {
 		return this.env;
+	}
+
+	protected int randInt() {
+		return this.gen.nextInt();
+	}
+	protected double randDouble() {
+		return this.gen.nextDouble();
+	}
+	protected boolean randBool() {
+		return this.gen.nextBoolean();
 	}
 }

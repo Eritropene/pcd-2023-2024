@@ -1,0 +1,105 @@
+package pcd.ass01.concsimtrafficbase;
+
+import java.util.Optional;
+
+public class CarAgentBasicRandom extends CarAgent {
+    private static final int CAR_NEAR_DIST = 15;
+    private static final int CAR_FAR_ENOUGH_DIST = 20;
+    private static final int MAX_WAITING_TIME = 2;
+
+    private enum CarAgentState {
+        STOPPED, ACCELERATING,
+        DECELERATING_BECAUSE_OF_A_CAR,
+        WAIT_A_BIT, MOVING_CONSTANT_SPEED}
+
+    private CarAgentBasicRandom.CarAgentState state;
+
+    private int waitingTime;
+    private int maxWaitingTime;
+
+    public CarAgentBasicRandom(String id, RoadsEnv env, Road road,
+                               double initialPos,
+                               double acc,
+                               double dec,
+                               double vmax) {
+        super(id, env, road, initialPos, acc, dec, vmax);
+        state = CarAgentBasicRandom.CarAgentState.STOPPED;
+    }
+
+
+    /**
+     *
+     * Behaviour defined by a simple finite state machine
+     *
+     */
+    protected void decide(int dt) {
+        switch (state) {
+            case CarAgentBasicRandom.CarAgentState.STOPPED:
+                if (!detectedNearCar()) {
+                    state = randBool() ? CarAgentState.ACCELERATING : CarAgentState.WAIT_A_BIT;
+                    waitingTime = 0;
+                    maxWaitingTime = MAX_WAITING_TIME + randInt() % 4;
+                }
+                break;
+            case CarAgentBasicRandom.CarAgentState.ACCELERATING:
+                if (detectedNearCar()) {
+                    state = CarAgentBasicRandom.CarAgentState.DECELERATING_BECAUSE_OF_A_CAR;
+                } else {
+                    this.currentSpeed += acceleration * dt;
+                    if (currentSpeed >= maxSpeed) {
+                        state = CarAgentBasicRandom.CarAgentState.MOVING_CONSTANT_SPEED;
+                    }
+                }
+                break;
+            case CarAgentBasicRandom.CarAgentState.MOVING_CONSTANT_SPEED:
+                if (detectedNearCar()) {
+                    state = CarAgentBasicRandom.CarAgentState.DECELERATING_BECAUSE_OF_A_CAR;
+                }
+                break;
+            case CarAgentBasicRandom.CarAgentState.DECELERATING_BECAUSE_OF_A_CAR:
+                this.currentSpeed -= deceleration * dt;
+                if (this.currentSpeed <= 0) {
+                    state =  CarAgentBasicRandom.CarAgentState.STOPPED;
+                } else if (this.carFarEnough()) {
+                    state = CarAgentBasicRandom.CarAgentState.WAIT_A_BIT;
+                    waitingTime = 0;
+                    maxWaitingTime = MAX_WAITING_TIME + randInt() % 4;
+                }
+                break;
+            case CarAgentBasicRandom.CarAgentState.WAIT_A_BIT:
+                waitingTime += dt;
+                if (waitingTime > maxWaitingTime) {
+                    state = CarAgentBasicRandom.CarAgentState.ACCELERATING;
+                }
+                break;
+        }
+
+        if (currentSpeed > 0) {
+            selectedAction = Optional.of(new MoveForward(currentSpeed * dt));
+        }
+
+    }
+
+    /* aux methods */
+
+    private boolean detectedNearCar() {
+        Optional<CarAgentInfo> car = currentPercept.nearestCarInFront();
+        if (car.isEmpty()) {
+            return false;
+        } else {
+            double dist = car.get().getPos() - currentPercept.roadPos();
+            return dist < CAR_NEAR_DIST;
+        }
+    }
+
+
+    private boolean carFarEnough() {
+        Optional<CarAgentInfo> car = currentPercept.nearestCarInFront();
+        if (car.isEmpty()) {
+            return true;
+        } else {
+            double dist = car.get().getPos() - currentPercept.roadPos();
+            return dist > CAR_FAR_ENOUGH_DIST;
+        }
+    }
+}
